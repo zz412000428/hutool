@@ -1,11 +1,10 @@
 package cn.hutool.core.util;
 
-import java.util.List;
-
+import cn.hutool.core.lang.Dict;
 import org.junit.Assert;
 import org.junit.Test;
 
-import cn.hutool.core.lang.Dict;
+import java.util.List;
 
 /**
  * 字符串工具类单元测试
@@ -21,12 +20,6 @@ public class StrUtilTest {
 		Assert.assertTrue(StrUtil.isBlank(blank));
 	}
 	
-	@Test
-	public void isBlankTest2() {
-		String blank = "\u202a";
-		Assert.assertTrue(StrUtil.isBlank(blank));
-	}
-
 	@Test
 	public void trimTest() {
 		String blank = "	 哈哈 　";
@@ -57,6 +50,9 @@ public class StrUtilTest {
 		Assert.assertEquals(5, split.size());
 		// 测试去掉两边空白符是否生效
 		Assert.assertEquals("b", split.get(1));
+
+		final String[] strings = StrUtil.splitToArray("abc/", '/');
+		Assert.assertEquals(2, strings.length);
 	}
 
 	@Test
@@ -218,6 +214,20 @@ public class StrUtilTest {
 		String pre = StrUtil.sub(a, -5, a.length());
 		Assert.assertEquals("ghigh", pre);
 	}
+
+	@Test
+	public void subByCodePointTest() {
+		// 🤔👍🍓🤔
+		String test = "\uD83E\uDD14\uD83D\uDC4D\uD83C\uDF53\uD83E\uDD14";
+
+		// 不正确的子字符串
+		String wrongAnswer = StrUtil.sub(test, 0, 3);
+		Assert.assertNotEquals("\uD83E\uDD14\uD83D\uDC4D\uD83C\uDF53", wrongAnswer);
+
+		// 正确的子字符串
+		String rightAnswer = StrUtil.subByCodePoint(test, 0, 3);
+		Assert.assertEquals("\uD83E\uDD14\uD83D\uDC4D\uD83C\uDF53", rightAnswer);
+	}
 	
 	@Test
 	public void subBeforeTest() {
@@ -330,6 +340,9 @@ public class StrUtilTest {
 		String str1 = "TableTestOfDay";
 		String result1 = StrUtil.toCamelCase(str1);
 		Assert.assertEquals("TableTestOfDay", result1);
+
+		String abc1d = StrUtil.toCamelCase("abc_1d");
+		Assert.assertEquals("abc1d", abc1d);
 	}
 	
 	@Test
@@ -405,5 +418,44 @@ public class StrUtilTest {
 		Assert.assertEquals("1AB", StrUtil.padAfter("1", 3, "ABC"));
 		Assert.assertEquals("23", StrUtil.padAfter("123", 2, "ABC"));
 	}
-	
+
+	@Test
+	public void subBetweenAllTest() {
+		Assert.assertArrayEquals(new String[]{"yz","abc"},StrUtil.subBetweenAll("saho[yz]fdsadp[abc]a","[","]"));
+		Assert.assertArrayEquals(new String[]{"abc"}, StrUtil.subBetweenAll("saho[yzfdsadp[abc]a]","[","]"));
+		Assert.assertArrayEquals(new String[]{"abc", "abc"}, StrUtil.subBetweenAll("yabczyabcz","y","z"));
+		Assert.assertArrayEquals(new String[0], StrUtil.subBetweenAll(null,"y","z"));
+		Assert.assertArrayEquals(new String[0], StrUtil.subBetweenAll("","y","z"));
+		Assert.assertArrayEquals(new String[0], StrUtil.subBetweenAll("abc",null,"z"));
+		Assert.assertArrayEquals(new String[0], StrUtil.subBetweenAll("abc","y",null));
+	}
+
+	@Test
+	public void subBetweenAllTest2() {
+		//issue#861@Github，起始不匹配的时候，应该直接空
+		String src1 = "/* \n* hutool  */  asdas  /* \n* hutool  */";
+		String src2 = "/ * hutool  */  asdas  / * hutool  */";
+
+		String[] results1 = StrUtil.subBetweenAll(src1,"/**","*/");
+		Assert.assertEquals(0, results1.length);
+
+		String[] results2 = StrUtil.subBetweenAll(src2,"/*","*/");
+		Assert.assertEquals(0, results2.length);
+	}
+
+	@Test
+	public void briefTest(){
+		String str = RandomUtil.randomString(1000);
+		int maxLength = RandomUtil.randomInt(1000);
+		String brief = StrUtil.brief(str, maxLength);
+		Assert.assertEquals(brief.length(), maxLength);
+	}
+
+	@Test
+	public void filterTest() {
+		final String filterNumber = StrUtil.filter("hutool678", CharUtil::isNumber);
+		Assert.assertEquals("678", filterNumber);
+		String cleanBlank = StrUtil.filter("	 你 好　", c -> !CharUtil.isBlankChar(c));
+		Assert.assertEquals("你好", cleanBlank);
+	}
 }

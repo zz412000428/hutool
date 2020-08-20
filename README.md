@@ -1,15 +1,19 @@
 <p align="center">
-	<a href="https://hutool.cn/"><img src="https://cdn.jsdelivr.net/gh/looly/hutool-site/images/logo.jpg" width="400"></a>
+	<a href="https://hutool.cn/"><img src="https://cdn.jsdelivr.net/gh/looly/hutool-site/images/logo.jpg" width="45%"></a>
 </p>
 <p align="center">
 	<strong>A set of tools that keep Java sweet.</strong>
 </p>
 <p align="center">
-	<a target="_blank" href="https://search.maven.org/search?q=g:%22cn.hutool%22%20AND%20a:%22hutool-all%22">
-        <img src="https://img.shields.io/maven-central/v/cn.hutool/hutool-all.svg?label=Maven%20Central" />
+	<a href="https://hutool.cn">https://hutool.cn/</a>
+</p>
+
+<p align="center">
+	<a target="_blank" href="https://search.maven.org/artifact/cn.hutool/hutool-all">
+		<img src="https://img.shields.io/maven-central/v/cn.hutool/hutool-all.svg?label=Maven%20Central" />
 	</a>
-	<a target="_blank" href="http://license.coscl.org.cn/MulanPSL/">
-        <img src="https://img.shields.io/:license-MulanPSL-blue.svg" />
+	<a target="_blank" href="https://license.coscl.org.cn/MulanPSL2/">
+		<img src="https://img.shields.io/:license-MulanPSL2-blue.svg" />
 	</a>
 	<a target="_blank" href="https://www.oracle.com/technetwork/java/javase/downloads/index.html">
 		<img src="https://img.shields.io/badge/JDK-8+-green.svg" />
@@ -26,8 +30,8 @@
 	<a target="_blank" href="https://gitter.im/hutool/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge">
 		<img src="https://badges.gitter.im/hutool/Lobby.svg" />
 	</a>
-	<a target="_blank" href="https://gitee.com/loolly/hutool/stargazers">
-		<img src="https://gitee.com/loolly/hutool/badge/star.svg?theme=dark" alt='gitee star'/>
+	<a target="_blank" href='https://gitee.com/loolly/hutool/stargazers'>
+		<img src='https://gitee.com/loolly/hutool/badge/star.svg?theme=gvp' alt='star'/>
 	</a>
 	<a target="_blank" href='https://github.com/looly/hutool'>
 		<img src="https://img.shields.io/github/stars/looly/hutool.svg?style=social" alt="github star"/>
@@ -36,12 +40,11 @@
 		<img src="https://api.netlify.com/api/v1/badges/7e0824f9-5f9a-4df0-89dd-b2fccfbeccb1/deploy-status" alt="netlify"/>
 	</a>
 </p>
+
+<br/>
 <p align="center">
-	-- 主页：<a href="https://hutool.cn">https://hutool.cn/</a> | <a href="https://www.hutool.club/">https://www.hutool.club/</a> --
-</p>
-<p align="center">
-	-- QQ群③：<a href="https://shang.qq.com/wpa/qunwpa?idkey=35764b2247c46ffebe28e4541e5b2af8f5dee5efcf47ceec69d21e4521aa8c75">555368316</a> --
-	-- QQ群④：<a href="https://shang.qq.com/wpa/qunwpa?idkey=309056e409a304a454c7ba250a10d38dd82b9b49cd0e1f180fedbde78b02ae0d">718802356</a> --
+	<a href="https://qm.qq.com/cgi-bin/qm/qr?k=oolXnM7i9pHbiyUOfCdQWSA3RuIXqUsk&jump_from=webapi"><img src="https://img.shields.io/badge/QQ%E7%BE%A4%E2%91%A3-718802356-orange"/></a>
+	<a href="https://qm.qq.com/cgi-bin/qm/qr?k=0wwldaU0E8r-ZzHl_wma33W7420zwXYi&jump_from=webapi"><img src="https://img.shields.io/badge/QQ%E7%BE%A4%E2%91%A4-956375658-orange"/></a>
 </p>
 
 -------------------------------------------------------------------------------
@@ -51,7 +54,7 @@ Hutool是一个小而全的Java工具类库，通过静态方法封装，降低�
 
 Hutool中的工具方法来自于每个用户的精雕细琢，它涵盖了Java开发底层代码中的方方面面，它既是大型项目开发中解决小问题的利器，也是小型项目中的效率担当；
 
-Hutool是项目中“util”包友好的替代，它节省了我们对项目中公用类和公用工具方法的封装时间，使开发专注于业务，同时可以最大限度的避免封装不完善带来的bug。
+Hutool是项目中“util”包友好的替代，它节省了开发人员对项目中公用类和公用工具方法的封装时间，使开发专注于业务，同时可以最大限度的避免封装不完善带来的bug。
 
 ### Hutool名称的由来
 
@@ -77,13 +80,13 @@ Hutool的存在就是为了减少代码搜索成本，避免网络上参差不�
 | -------------------|---------------------------------------------------------------------------------- |
 | hutool-aop         |     JDK动态代理封装，提供非IOC下的切面支持                                              |
 | hutool-bloomFilter |     布隆过滤，提供一些Hash算法的布隆过滤                                                |
-| hutool-cache       |     简单缓存实现                                                                    |
+| hutool-cache       |     简单缓存实现                                                                     |
 | hutool-core        |     核心，包括Bean操作、日期、各种Util等                                               |
 | hutool-cron        |     定时任务模块，提供类Crontab表达式的定时任务                                          |
-| hutool-crypto      |     加密解密模块，提供对称、非对称和摘要算法封装                                           |
+| hutool-crypto      |     加密解密模块，提供对称、非对称和摘要算法封装                                          |
 | hutool-db          |     JDBC封装后的数据操作，基于ActiveRecord思想                                         |
 | hutool-dfa         |     基于DFA模型的多关键字查找                                                         |
-| hutool-extra       |     扩展模块，对第三方封装（模板引擎、邮件、Servlet、二维码、Emoji、FTP、分词等）             |
+| hutool-extra       |     扩展模块，对第三方封装（模板引擎、邮件、Servlet、二维码、Emoji、FTP、分词等）            |
 | hutool-http        |     基于HttpUrlConnection的Http客户端封装                                            |
 | hutool-log         |     自动识别日志实现的日志门面                                                         |
 | hutool-script      |     脚本执行封装，例如Javascript                                                     |
@@ -91,7 +94,7 @@ Hutool的存在就是为了减少代码搜索成本，避免网络上参差不�
 | hutool-system      |     系统参数调用封装（JVM信息等）                                                      |
 | hutool-json        |     JSON实现                                                                       |
 | hutool-captcha     |     图片验证码实现                                                                   |
-| hutool-poi         |     针对POI中Excel的封装                                                             |
+| hutool-poi         |     针对POI中Excel和Word的封装                                                       |
 | hutool-socket      |     基于Java的NIO和AIO的Socket封装                                                   |
 
 可以根据需求对每个模块单独引入，也可以通过引入`hutool-all`方式引入所有模块。
@@ -101,9 +104,10 @@ Hutool的存在就是为了减少代码搜索成本，避免网络上参差不�
 ## 文档 
 
 [中文文档](https://www.hutool.cn/docs/)
-[中文文档（备用）](https://www.hutool.club/docs/)
 
 [参考API](https://apidoc.gitee.com/loolly/hutool/)
+
+[视频介绍](https://www.bilibili.com/video/BV1bQ4y1M7d9?p=2)
 
 -------------------------------------------------------------------------------
 
@@ -116,24 +120,24 @@ Hutool的存在就是为了减少代码搜索成本，避免网络上参差不�
 <dependency>
     <groupId>cn.hutool</groupId>
     <artifactId>hutool-all</artifactId>
-    <version>5.0.1</version>
+    <version>5.4.0</version>
 </dependency>
 ```
 
 ### Gradle
 ```
-compile 'cn.hutool:hutool-all:5.0.1'
+compile 'cn.hutool:hutool-all:5.4.0'
 ```
 
 ### 非Maven项目
 
 点击以下任一链接，下载`hutool-all-X.X.X.jar`即可：
 
-- [Maven中央库1](https://repo1.maven.org/maven2/cn/hutool/hutool-all/5.0.1/)
-- [Maven中央库2](http://repo2.maven.org/maven2/cn/hutool/hutool-all/5.0.1/)
+- [Maven中央库1](https://repo1.maven.org/maven2/cn/hutool/hutool-all/5.4.0/)
+- [Maven中央库2](http://repo2.maven.org/maven2/cn/hutool/hutool-all/5.4.0/)
 
 > 注意
-> Hutool 5.x支持JDK8+，对Android平台没有测试，不能保证所有工具类获工具方法可用。
+> Hutool 5.x支持JDK8+，对Android平台没有测试，不能保证所有工具类或工具方法可用。
 > 如果你的项目使用JDK7，请使用Hutool 4.x版本
 
 ### 编译安装

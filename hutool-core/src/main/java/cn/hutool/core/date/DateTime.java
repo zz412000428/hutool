@@ -1,22 +1,24 @@
 package cn.hutool.core.date;
 
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
-
 import cn.hutool.core.date.format.DateParser;
 import cn.hutool.core.date.format.DatePrinter;
 import cn.hutool.core.date.format.FastDateFormat;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * 包装java.util.Date
@@ -157,13 +159,34 @@ public class DateTime extends Date {
 	}
 
 	/**
+	 * 给定日期Instant的构造
+	 *
+	 * @param instant  {@link Instant} 对象
+	 * @param zoneId 时区ID
+	 * @since 5.0.5
+	 */
+	public DateTime(Instant instant, ZoneId zoneId) {
+		this(instant.toEpochMilli(), TimeZone.getTimeZone(ObjectUtil.defaultIfNull(zoneId, ZoneId.systemDefault())));
+	}
+
+	/**
 	 * 给定日期TemporalAccessor的构造
 	 *
 	 * @param temporalAccessor {@link TemporalAccessor} 对象
 	 * @since 5.0.0
 	 */
 	public DateTime(TemporalAccessor temporalAccessor) {
-		this(Instant.from(temporalAccessor));
+		this(DateUtil.toInstant(temporalAccessor));
+	}
+
+	/**
+	 * 给定日期ZonedDateTime的构造
+	 *
+	 * @param zonedDateTime {@link ZonedDateTime} 对象
+	 * @since 5.0.5
+	 */
+	public DateTime(ZonedDateTime zonedDateTime) {
+		this(zonedDateTime.toInstant(), zonedDateTime.getZone());
 	}
 
 	/**
@@ -185,9 +208,7 @@ public class DateTime extends Date {
 	 */
 	public DateTime(long timeMillis, TimeZone timeZone) {
 		super(timeMillis);
-		if (null != timeZone) {
-			this.timeZone = timeZone;
-		}
+		this.timeZone = ObjectUtil.defaultIfNull(timeZone, TimeZone.getDefault());
 	}
 
 	/**
@@ -215,12 +236,12 @@ public class DateTime extends Date {
 	/**
 	 * 构建DateTime对象
 	 *
-	 * @param dateStr Date字符串
+	 * @param dateStr   Date字符串
 	 * @param formatter 格式化器,{@link DateTimeFormatter}
 	 * @since 5.0.0
 	 */
 	public DateTime(CharSequence dateStr, DateTimeFormatter formatter) {
-		this(Instant.from(formatter.parse(dateStr)));
+		this(Instant.from(formatter.parse(dateStr)), formatter.getZone());
 	}
 
 	/**
@@ -247,7 +268,12 @@ public class DateTime extends Date {
 	 * @return 如果此对象为可变对象，返回自身，否则返回新对象
 	 */
 	public DateTime offset(DateField datePart, int offset) {
+		if(DateField.ERA == datePart){
+			throw new IllegalArgumentException("ERA is not support offset!");
+		}
+
 		final Calendar cal = toCalendar();
+		//noinspection MagicConstant
 		cal.add(datePart.getValue(), offset);
 
 		DateTime dt = mutable ? this : ObjectUtil.clone(this);
@@ -265,6 +291,7 @@ public class DateTime extends Date {
 	 */
 	public DateTime offsetNew(DateField datePart, int offset) {
 		final Calendar cal = toCalendar();
+		//noinspection MagicConstant
 		cal.add(datePart.getValue(), offset);
 
 		DateTime dt = ObjectUtil.clone(this);
@@ -428,6 +455,16 @@ public class DateTime extends Date {
 	}
 
 	/**
+	 * 获得指定日期是这个日期所在年份的第几天<br>
+	 *
+	 * @return 天
+	 * @since 5.3.6
+	 */
+	public int dayOfYear() {
+		return getField(DateField.DAY_OF_YEAR);
+	}
+
+	/**
 	 * 获得指定日期是星期几，1表示周日，2表示周一
 	 *
 	 * @return 星期几
@@ -488,6 +525,17 @@ public class DateTime extends Date {
 	 *
 	 * @return 毫秒数
 	 */
+	public int millisecond() {
+		return getField(DateField.MILLISECOND);
+	}
+
+	/**
+	 * 获得指定日期的毫秒数部分<br>
+	 *
+	 * @return 毫秒数
+	 * @deprecated 拼写错误，请使用{@link #millisecond()}
+	 */
+	@Deprecated
 	public int millsecond() {
 		return getField(DateField.MILLISECOND);
 	}
@@ -573,6 +621,7 @@ public class DateTime extends Date {
 			locale = Locale.getDefault(Locale.Category.FORMAT);
 		}
 		final Calendar cal = (null != zone) ? Calendar.getInstance(zone, locale) : Calendar.getInstance(locale);
+		//noinspection MagicConstant
 		cal.setFirstDayOfWeek(firstDayOfWeek.getValue());
 		cal.setTime(this);
 		return cal;
@@ -771,6 +820,26 @@ public class DateTime extends Date {
 	}
 
 	/**
+	 * 获取时区
+	 *
+	 * @return 时区
+	 * @since 5.0.5
+	 */
+	public TimeZone getTimeZone(){
+		return this.timeZone;
+	}
+
+	/**
+	 * 获取时区ID
+	 *
+	 * @return 时区ID
+	 * @since 5.0.5
+	 */
+	public ZoneId getZoneId(){
+		return this.timeZone.toZoneId();
+	}
+
+	/**
 	 * 设置时区
 	 *
 	 * @param timeZone 时区
@@ -778,17 +847,17 @@ public class DateTime extends Date {
 	 * @since 4.1.2
 	 */
 	public DateTime setTimeZone(TimeZone timeZone) {
-		this.timeZone = timeZone;
+		this.timeZone = ObjectUtil.defaultIfNull(timeZone, TimeZone.getDefault());
 		return this;
 	}
 
 	// -------------------------------------------------------------------- toString start
 
 	/**
-	 * 转为"yyyy-MM-dd yyyy-MM-dd HH:mm:ss " 格式字符串<br>
+	 * 转为"yyyy-MM-dd HH:mm:ss" 格式字符串<br>
 	 * 如果时区被设置，会转换为其时区对应的时间，否则转换为当前地点对应的时区
 	 *
-	 * @return "yyyy-MM-dd yyyy-MM-dd HH:mm:ss " 格式字符串
+	 * @return "yyyy-MM-dd HH:mm:ss" 格式字符串
 	 */
 	@Override
 	public String toString() {
@@ -796,10 +865,10 @@ public class DateTime extends Date {
 	}
 
 	/**
-	 * 转为"yyyy-MM-dd yyyy-MM-dd HH:mm:ss " 格式字符串<br>
+	 * 转为"yyyy-MM-dd HH:mm:ss" 格式字符串<br>
 	 * 时区使用当前地区的默认时区
 	 *
-	 * @return "yyyy-MM-dd yyyy-MM-dd HH:mm:ss " 格式字符串
+	 * @return "yyyy-MM-dd HH:mm:ss" 格式字符串
 	 * @since 4.1.14
 	 */
 	public String toStringDefaultTimeZone() {
@@ -807,11 +876,11 @@ public class DateTime extends Date {
 	}
 
 	/**
-	 * 转为"yyyy-MM-dd yyyy-MM-dd HH:mm:ss " 格式字符串<br>
+	 * 转为"yyyy-MM-dd HH:mm:ss" 格式字符串<br>
 	 * 如果时区不为{@code null}，会转换为其时区对应的时间，否则转换为当前时间对应的时区
 	 *
 	 * @param timeZone 时区
-	 * @return "yyyy-MM-dd yyyy-MM-dd HH:mm:ss " 格式字符串
+	 * @return "yyyy-MM-dd HH:mm:ss" 格式字符串
 	 * @since 4.1.14
 	 */
 	public String toString(TimeZone timeZone) {
@@ -824,9 +893,9 @@ public class DateTime extends Date {
 	}
 
 	/**
-	 * 转为"yyyy-MM-dd " 格式字符串
+	 * 转为"yyyy-MM-dd" 格式字符串
 	 *
-	 * @return "yyyy-MM-dd " 格式字符串
+	 * @return "yyyy-MM-dd" 格式字符串
 	 * @since 4.0.0
 	 */
 	public String toDateStr() {

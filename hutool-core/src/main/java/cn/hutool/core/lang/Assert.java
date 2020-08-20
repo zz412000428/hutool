@@ -1,11 +1,12 @@
 package cn.hutool.core.lang;
 
-import java.util.Collection;
-import java.util.Map;
-
-import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.func.Func0;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * 断言<br>
@@ -17,13 +18,31 @@ import cn.hutool.core.util.StrUtil;
 public class Assert {
 
 	/**
+	 * 断言是否为真，如果为 {@code false} 抛出给定的异常<br>
+	 *
+	 * <pre class="code">
+	 * Assert.isTrue(i &gt; 0, IllegalArgumentException::new);
+	 * </pre>
+	 *
+	 * @param <X> 异常类型
+	 * @param expression 布尔值
+	 * @param supplier   指定断言不通过时抛出的异常
+	 * @throws X if expression is {@code false}
+	 */
+	public static <X extends Throwable> void isTrue(boolean expression, Func0<? extends X> supplier) throws X {
+		if (false == expression) {
+			throw supplier.callWithRuntimeException();
+		}
+	}
+
+	/**
 	 * 断言是否为真，如果为 {@code false} 抛出 {@code IllegalArgumentException} 异常<br>
 	 * 
 	 * <pre class="code">
 	 * Assert.isTrue(i &gt; 0, "The value must be greater than zero");
 	 * </pre>
 	 * 
-	 * @param expression 波尔值
+	 * @param expression 布尔值
 	 * @param errorMsgTemplate 错误抛出异常附带的消息模板，变量用{}代替
 	 * @param params 参数列表
 	 * @throws IllegalArgumentException if expression is {@code false}
@@ -41,7 +60,7 @@ public class Assert {
 	 * Assert.isTrue(i &gt; 0, "The value must be greater than zero");
 	 * </pre>
 	 * 
-	 * @param expression 波尔值
+	 * @param expression 布尔值
 	 * @throws IllegalArgumentException if expression is {@code false}
 	 */
 	public static void isTrue(boolean expression) throws IllegalArgumentException {
@@ -55,7 +74,7 @@ public class Assert {
 	 * Assert.isFalse(i &lt; 0, "The value must be greater than zero");
 	 * </pre>
 	 * 
-	 * @param expression 波尔值
+	 * @param expression 布尔值
 	 * @param errorMsgTemplate 错误抛出异常附带的消息模板，变量用{}代替
 	 * @param params 参数列表
 	 * @throws IllegalArgumentException if expression is {@code false}
@@ -73,7 +92,7 @@ public class Assert {
 	 * Assert.isFalse(i &lt; 0);
 	 * </pre>
 	 * 
-	 * @param expression 波尔值
+	 * @param expression 布尔值
 	 * @throws IllegalArgumentException if expression is {@code false}
 	 */
 	public static void isFalse(boolean expression) throws IllegalArgumentException {
@@ -353,7 +372,7 @@ public class Assert {
 	 * @throws IllegalArgumentException if the collection is {@code null} or has no elements
 	 */
 	public static <T> Collection<T> notEmpty(Collection<T> collection, String errorMsgTemplate, Object... params) throws IllegalArgumentException {
-		if (CollectionUtil.isEmpty(collection)) {
+		if (CollUtil.isEmpty(collection)) {
 			throw new IllegalArgumentException(StrUtil.format(errorMsgTemplate, params));
 		}
 		return collection;
@@ -392,7 +411,7 @@ public class Assert {
 	 * @throws IllegalArgumentException if the map is {@code null} or has no entries
 	 */
 	public static <K, V> Map<K, V> notEmpty(Map<K, V> map, String errorMsgTemplate, Object... params) throws IllegalArgumentException {
-		if (CollectionUtil.isEmpty(map)) {
+		if (CollUtil.isEmpty(map)) {
 			throw new IllegalArgumentException(StrUtil.format(errorMsgTemplate, params));
 		}
 		return map;

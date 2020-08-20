@@ -1,11 +1,33 @@
 package cn.hutool.core.img;
 
+import cn.hutool.core.codec.Base64;
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.io.resource.Resource;
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.FontFormatException;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
@@ -23,28 +45,6 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
-
-import cn.hutool.core.codec.Base64;
-import cn.hutool.core.convert.Convert;
-import cn.hutool.core.exceptions.UtilException;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.io.resource.Resource;
-import cn.hutool.core.lang.Assert;
-import cn.hutool.core.util.ArrayUtil;
-import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
 
 /**
  * 图片处理工具类：<br>
@@ -171,17 +171,20 @@ public class ImgUtil {
 
 	/**
 	 * 缩放图像（按高度和宽度缩放）<br>
-	 * 缩放后默认为jpeg格式
+	 * 缩放后默认格式与源图片相同，无法识别原图片默认JPG
 	 *
 	 * @param srcImageFile  源图像文件地址
 	 * @param destImageFile 缩放后的图像地址
 	 * @param width         缩放后的宽度
 	 * @param height        缩放后的高度
-	 * @param fixedColor    比例不对时补充的颜色，不补充为<code>null</code>
+	 * @param fixedColor    补充的颜色，不补充为<code>null</code>
 	 * @throws IORuntimeException IO异常
 	 */
 	public static void scale(File srcImageFile, File destImageFile, int width, int height, Color fixedColor) throws IORuntimeException {
-		write(scale(read(srcImageFile), width, height, fixedColor), destImageFile);
+		Img.from(srcImageFile)//
+				.setTargetImageType(FileUtil.extName(destImageFile))//
+				.scale(width, height, fixedColor)//
+				.write(destImageFile);
 	}
 
 	/**
@@ -397,12 +400,12 @@ public class ImgUtil {
 				if (srcWidth % destWidth == 0) {
 					cols = srcWidth / destWidth;
 				} else {
-					cols = (int) Math.floor(srcWidth / destWidth) + 1;
+					cols = (int) Math.floor((double) srcWidth / destWidth) + 1;
 				}
 				if (srcHeight % destHeight == 0) {
 					rows = srcHeight / destHeight;
 				} else {
-					rows = (int) Math.floor(srcHeight / destHeight) + 1;
+					rows = (int) Math.floor((double) srcHeight / destHeight) + 1;
 				}
 				// 循环建立切片
 				Image tag;
@@ -1247,6 +1250,32 @@ public class ImgUtil {
 	}
 
 	/**
+	 * 将图片对象转换为InputStream形式
+	 *
+	 * @param image     图片对象
+	 * @param imageType 图片类型
+	 * @return Base64的字符串表现形式
+	 * @since 4.2.4
+	 */
+	public static ByteArrayInputStream toStream(Image image, String imageType) {
+		return IoUtil.toStream(toBytes(image, imageType));
+	}
+
+	/**
+	 * 将图片对象转换为Base64的Data URI形式，格式为：data:image/[imageType];base64,[data]
+	 *
+	 * @param image     图片对象
+	 * @param imageType 图片类型
+	 * @return Base64的字符串表现形式
+	 * @since 5.3.6
+	 */
+	public static String toBase64DataUri(Image image, String imageType) {
+		return URLUtil.getDataUri(
+				"image/" + imageType, "base64",
+				toBase64(image, imageType));
+	}
+
+	/**
 	 * 将图片对象转换为Base64形式
 	 *
 	 * @param image     图片对象
@@ -1255,9 +1284,21 @@ public class ImgUtil {
 	 * @since 4.1.8
 	 */
 	public static String toBase64(Image image, String imageType) {
+		return Base64.encode(toBytes(image, imageType));
+	}
+
+	/**
+	 * 将图片对象转换为bytes形式
+	 *
+	 * @param image     图片对象
+	 * @param imageType 图片类型
+	 * @return Base64的字符串表现形式
+	 * @since 5.2.4
+	 */
+	public static byte[] toBytes(Image image, String imageType) {
 		final ByteArrayOutputStream out = new ByteArrayOutputStream();
 		write(image, imageType, out);
-		return Base64.encode(out.toByteArray());
+		return out.toByteArray();
 	}
 
 	/**
@@ -1265,28 +1306,65 @@ public class ImgUtil {
 	 *
 	 * @param str             文字
 	 * @param font            字体{@link Font}
-	 * @param backgroundColor 背景颜色
-	 * @param fontColor       字体颜色
+	 * @param backgroundColor 背景颜色，默认透明
+	 * @param fontColor       字体颜色，默认黑色
 	 * @param out             图片输出地
 	 * @throws IORuntimeException IO异常
 	 */
 	public static void createImage(String str, Font font, Color backgroundColor, Color fontColor, ImageOutputStream out) throws IORuntimeException {
+		writePng(createImage(str, font, backgroundColor, fontColor, BufferedImage.TYPE_INT_ARGB), out);
+	}
+
+	/**
+	 * 根据文字创建图片
+	 *
+	 * @param str             文字
+	 * @param font            字体{@link Font}
+	 * @param backgroundColor 背景颜色，默认透明
+	 * @param fontColor       字体颜色，默认黑色
+	 * @param imageType       图片类型，见：{@link BufferedImage}
+	 * @return 图片
+	 * @throws IORuntimeException IO异常
+	 */
+	public static BufferedImage createImage(String str, Font font, Color backgroundColor, Color fontColor, int imageType) throws IORuntimeException {
 		// 获取font的样式应用在str上的整个矩形
-		Rectangle2D r = font.getStringBounds(str, new FontRenderContext(AffineTransform.getScaleInstance(1, 1), false, false));
-		int unitHeight = (int) Math.floor(r.getHeight());// 获取单个字符的高度
+		final Rectangle2D r = getRectangle(str, font);
+		// 获取单个字符的高度
+		int unitHeight = (int) Math.floor(r.getHeight());
 		// 获取整个str用了font样式的宽度这里用四舍五入后+1保证宽度绝对能容纳这个字符串作为图片的宽度
 		int width = (int) Math.round(r.getWidth()) + 1;
-		int height = unitHeight + 3;// 把单个字符的高度+3保证高度绝对能容纳字符串作为图片的高度
+		// 把单个字符的高度+3保证高度绝对能容纳字符串作为图片的高度
+		int height = unitHeight + 3;
+
 		// 创建图片
-		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_BGR);
-		Graphics g = image.getGraphics();
-		g.setColor(backgroundColor);
-		g.fillRect(0, 0, width, height);// 先用背景色填充整张图片,也就是背景
-		g.setColor(fontColor);
+		final BufferedImage image = new BufferedImage(width, height, imageType);
+		final Graphics g = image.getGraphics();
+		if (null != backgroundColor) {
+			// 先用背景色填充整张图片,也就是背景
+			g.setColor(backgroundColor);
+			g.fillRect(0, 0, width, height);
+		}
+		g.setColor(ObjectUtil.defaultIfNull(fontColor, Color.BLACK));
 		g.setFont(font);// 设置画笔字体
 		g.drawString(str, 0, font.getSize());// 画出字符串
 		g.dispose();
-		writePng(image, out);
+
+		return image;
+	}
+
+	/**
+	 * 获取font的样式应用在str上的整个矩形
+	 *
+	 * @param str  字符串，必须非空
+	 * @param font 字体，必须非空
+	 * @return {@link Rectangle2D}
+	 * @since 5.3.3
+	 */
+	public static Rectangle2D getRectangle(String str, Font font) {
+		return font.getStringBounds(str,
+				new FontRenderContext(AffineTransform.getScaleInstance(1, 1),
+						false,
+						false));
 	}
 
 	/**
@@ -1298,18 +1376,7 @@ public class ImgUtil {
 	 * @since 3.0.9
 	 */
 	public static Font createFont(File fontFile) {
-		try {
-			return Font.createFont(Font.TRUETYPE_FONT, fontFile);
-		} catch (FontFormatException e) {
-			// True Type字体无效时使用Type1字体
-			try {
-				return Font.createFont(Font.TYPE1_FONT, fontFile);
-			} catch (Exception e1) {
-				throw new UtilException(e);
-			}
-		} catch (IOException e) {
-			throw new IORuntimeException(e);
-		}
+		return FontUtil.createFont(fontFile);
 	}
 
 	/**
@@ -1321,18 +1388,7 @@ public class ImgUtil {
 	 * @since 3.0.9
 	 */
 	public static Font createFont(InputStream fontStream) {
-		try {
-			return Font.createFont(Font.TRUETYPE_FONT, fontStream);
-		} catch (FontFormatException e) {
-			// True Type字体无效时使用Type1字体
-			try {
-				return Font.createFont(Font.TYPE1_FONT, fontStream);
-			} catch (Exception e1) {
-				throw new UtilException(e1);
-			}
-		} catch (IOException e) {
-			throw new IORuntimeException(e);
-		}
+		return FontUtil.createFont(fontStream);
 	}
 
 	/**
@@ -1551,11 +1607,18 @@ public class ImgUtil {
 	 * @since 3.2.2
 	 */
 	public static BufferedImage read(File imageFile) {
+		BufferedImage result;
 		try {
-			return ImageIO.read(imageFile);
+			result = ImageIO.read(imageFile);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+
+		if (null == result) {
+			throw new IllegalArgumentException("Image type of file [" + imageFile.getName() + "] is not supported!");
+		}
+
+		return result;
 	}
 
 	/**
@@ -1577,11 +1640,18 @@ public class ImgUtil {
 	 * @since 3.2.2
 	 */
 	public static BufferedImage read(InputStream imageStream) {
+		BufferedImage result;
 		try {
-			return ImageIO.read(imageStream);
+			result = ImageIO.read(imageStream);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+
+		if (null == result) {
+			throw new IllegalArgumentException("Image type is not supported!");
+		}
+
+		return result;
 	}
 
 	/**
@@ -1592,11 +1662,18 @@ public class ImgUtil {
 	 * @since 3.2.2
 	 */
 	public static BufferedImage read(ImageInputStream imageStream) {
+		BufferedImage result;
 		try {
-			return ImageIO.read(imageStream);
+			result = ImageIO.read(imageStream);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+
+		if (null == result) {
+			throw new IllegalArgumentException("Image type is not supported!");
+		}
+
+		return result;
 	}
 
 	/**
@@ -1607,11 +1684,18 @@ public class ImgUtil {
 	 * @since 3.2.2
 	 */
 	public static BufferedImage read(URL imageUrl) {
+		BufferedImage result;
 		try {
-			return ImageIO.read(imageUrl);
+			result = ImageIO.read(imageUrl);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+
+		if (null == result) {
+			throw new IllegalArgumentException("Image type of [" + imageUrl.toString() + "] is not supported!");
+		}
+
+		return result;
 	}
 
 	/**
@@ -1623,11 +1707,18 @@ public class ImgUtil {
 	 * @since 3.1.2
 	 */
 	public static ImageOutputStream getImageOutputStream(OutputStream out) throws IORuntimeException {
+		ImageOutputStream result;
 		try {
-			return ImageIO.createImageOutputStream(out);
+			result = ImageIO.createImageOutputStream(out);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+
+		if (null == result) {
+			throw new IllegalArgumentException("Image type is not supported!");
+		}
+
+		return result;
 	}
 
 	/**
@@ -1639,11 +1730,18 @@ public class ImgUtil {
 	 * @since 3.2.2
 	 */
 	public static ImageOutputStream getImageOutputStream(File outFile) throws IORuntimeException {
+		ImageOutputStream result;
 		try {
-			return ImageIO.createImageOutputStream(outFile);
+			result = ImageIO.createImageOutputStream(outFile);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+
+		if (null == result) {
+			throw new IllegalArgumentException("Image type of file [" + outFile.getName() + "] is not supported!");
+		}
+
+		return result;
 	}
 
 	/**
@@ -1655,11 +1753,18 @@ public class ImgUtil {
 	 * @since 3.1.2
 	 */
 	public static ImageInputStream getImageInputStream(InputStream in) throws IORuntimeException {
+		ImageOutputStream result;
 		try {
-			return ImageIO.createImageInputStream(in);
+			result = ImageIO.createImageOutputStream(in);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+
+		if (null == result) {
+			throw new IllegalArgumentException("Image type is not supported!");
+		}
+
+		return result;
 	}
 
 	/**
@@ -1709,13 +1814,23 @@ public class ImgUtil {
 	 * @since 4.1.14
 	 */
 	public static String toHex(Color color) {
-		String R = Integer.toHexString(color.getRed());
-		R = R.length() < 2 ? ('0' + R) : R;
-		String G = Integer.toHexString(color.getGreen());
-		G = G.length() < 2 ? ('0' + G) : G;
-		String B = Integer.toHexString(color.getBlue());
-		B = B.length() < 2 ? ('0' + B) : B;
-		return '#' + R + G + B;
+		return toHex(color.getRed(), color.getGreen(), color.getBlue());
+	}
+
+	/**
+	 * RGB颜色值转换成十六进制颜色码
+	 *
+	 * @param r 红(R)
+	 * @param g 绿(G)
+	 * @param b 蓝(B)
+	 * @return 返回字符串形式的 十六进制颜色码 如
+	 */
+	public static String toHex(int r, int g, int b) {
+		// rgb 小于 255
+		if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+			throw new IllegalArgumentException("RGB must be 0~255!");
+		}
+		return String.format("#%02X%02X%02X", r, g, b);
 	}
 
 	/**
@@ -1837,5 +1952,114 @@ public class ImgUtil {
 			random = RandomUtil.getRandom();
 		}
 		return new Color(random.nextInt(255), random.nextInt(255), random.nextInt(255));
+	}
+
+	/**
+	 * 获得修正后的矩形坐标位置，变为以背景中心为基准坐标（即x,y == 0,0时，处于背景正中）
+	 *
+	 * @param rectangle        矩形
+	 * @param backgroundWidth  参考宽（背景宽）
+	 * @param backgroundHeight 参考高（背景高）
+	 * @return 修正后的{@link Point}
+	 * @since 5.3.6
+	 */
+	public static Point getPointBaseCentre(Rectangle rectangle, int backgroundWidth, int backgroundHeight) {
+		return new Point(
+				rectangle.x + (Math.abs(backgroundWidth - rectangle.width) / 2), //
+				rectangle.y + (Math.abs(backgroundHeight - rectangle.height) / 2)//
+		);
+	}
+
+	// ------------------------------------------------------------------------------------------------------ 背景图换算
+
+	/**
+	 * 背景移除
+	 * 图片去底工具
+	 * 将 "纯色背景的图片" 还原成 "透明背景的图片"
+	 * 将纯色背景的图片转成矢量图
+	 * 取图片边缘的像素点和获取到的图片主题色作为要替换的背景色
+	 * 再加入一定的容差值,然后将所有像素点与该颜色进行比较
+	 * 发现相同则将颜色不透明度设置为0,使颜色完全透明.
+	 *
+	 * @param inputPath  要处理图片的路径
+	 * @param outputPath 输出图片的路径
+	 * @param tolerance  容差值[根据图片的主题色,加入容差值,值的范围在0~255之间]
+	 * @return 返回处理结果 true:图片处理完成 false:图片处理失败
+	 */
+	public static boolean backgroundRemoval(String inputPath, String outputPath, int tolerance) {
+		return BackgroundRemoval.backgroundRemoval(inputPath, outputPath, tolerance);
+	}
+
+	/**
+	 * 背景移除
+	 * 图片去底工具
+	 * 将 "纯色背景的图片" 还原成 "透明背景的图片"
+	 * 将纯色背景的图片转成矢量图
+	 * 取图片边缘的像素点和获取到的图片主题色作为要替换的背景色
+	 * 再加入一定的容差值,然后将所有像素点与该颜色进行比较
+	 * 发现相同则将颜色不透明度设置为0,使颜色完全透明.
+	 *
+	 * @param input     需要进行操作的图片
+	 * @param output    最后输出的文件
+	 * @param tolerance 容差值[根据图片的主题色,加入容差值,值的取值范围在0~255之间]
+	 * @return 返回处理结果 true:图片处理完成 false:图片处理失败
+	 */
+	public static boolean backgroundRemoval(File input, File output, int tolerance) {
+		return BackgroundRemoval.backgroundRemoval(input, output, tolerance);
+	}
+
+	/**
+	 * 背景移除
+	 * 图片去底工具
+	 * 将 "纯色背景的图片" 还原成 "透明背景的图片"
+	 * 将纯色背景的图片转成矢量图
+	 * 取图片边缘的像素点和获取到的图片主题色作为要替换的背景色
+	 * 再加入一定的容差值,然后将所有像素点与该颜色进行比较
+	 * 发现相同则将颜色不透明度设置为0,使颜色完全透明.
+	 *
+	 * @param input     需要进行操作的图片
+	 * @param output    最后输出的文件
+	 * @param override  指定替换成的背景颜色 为null时背景为透明
+	 * @param tolerance 容差值[根据图片的主题色,加入容差值,值的取值范围在0~255之间]
+	 * @return 返回处理结果 true:图片处理完成 false:图片处理失败
+	 */
+	public static boolean backgroundRemoval(File input, File output, Color override, int tolerance) {
+		return BackgroundRemoval.backgroundRemoval(input, output, override, tolerance);
+	}
+
+	/**
+	 * 背景移除
+	 * 图片去底工具
+	 * 将 "纯色背景的图片" 还原成 "透明背景的图片"
+	 * 将纯色背景的图片转成矢量图
+	 * 取图片边缘的像素点和获取到的图片主题色作为要替换的背景色
+	 * 再加入一定的容差值,然后将所有像素点与该颜色进行比较
+	 * 发现相同则将颜色不透明度设置为0,使颜色完全透明.
+	 *
+	 * @param bufferedImage 需要进行处理的图片流
+	 * @param override      指定替换成的背景颜色 为null时背景为透明
+	 * @param tolerance     容差值[根据图片的主题色,加入容差值,值的取值范围在0~255之间]
+	 * @return 返回处理好的图片流
+	 */
+	public static BufferedImage backgroundRemoval(BufferedImage bufferedImage, Color override, int tolerance) {
+		return BackgroundRemoval.backgroundRemoval(bufferedImage, override, tolerance);
+	}
+
+	/**
+	 * 背景移除
+	 * 图片去底工具
+	 * 将 "纯色背景的图片" 还原成 "透明背景的图片"
+	 * 将纯色背景的图片转成矢量图
+	 * 取图片边缘的像素点和获取到的图片主题色作为要替换的背景色
+	 * 再加入一定的容差值,然后将所有像素点与该颜色进行比较
+	 * 发现相同则将颜色不透明度设置为0,使颜色完全透明.
+	 *
+	 * @param outputStream 需要进行处理的图片字节数组流
+	 * @param override     指定替换成的背景颜色 为null时背景为透明
+	 * @param tolerance    容差值[根据图片的主题色,加入容差值,值的取值范围在0~255之间]
+	 * @return 返回处理好的图片流
+	 */
+	public static BufferedImage backgroundRemoval(ByteArrayOutputStream outputStream, Color override, int tolerance) {
+		return BackgroundRemoval.backgroundRemoval(outputStream, override, tolerance);
 	}
 }

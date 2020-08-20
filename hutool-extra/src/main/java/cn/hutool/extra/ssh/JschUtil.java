@@ -6,7 +6,13 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.core.net.LocalPortGenerater;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.ChannelShell;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -79,9 +85,24 @@ public class JschUtil {
 	 * @return SSH会话
 	 */
 	public static Session openSession(String sshHost, int sshPort, String sshUser, String sshPass) {
+		return openSession(sshHost, sshPort, sshUser, sshPass, 0);
+	}
+
+	/**
+	 * 打开一个新的SSH会话
+	 *
+	 * @param sshHost 主机
+	 * @param sshPort 端口
+	 * @param sshUser 用户名
+	 * @param sshPass 密码
+	 * @param timeout Socket连接超时时长，单位毫秒
+	 * @return SSH会话
+	 * @since 5.3.3
+	 */
+	public static Session openSession(String sshHost, int sshPort, String sshUser, String sshPass, int timeout) {
 		final Session session = createSession(sshHost, sshPort, sshUser, sshPass);
 		try {
-			session.connect();
+			session.connect(timeout);
 		} catch (JSchException e) {
 			throw new JschRuntimeException(e);
 		}
@@ -119,28 +140,13 @@ public class JschUtil {
 	 * @since 4.5.2
 	 */
 	public static Session createSession(String sshHost, int sshPort, String sshUser, String sshPass) {
-		Assert.notEmpty(sshHost, "SSH Host must be not empty!");
-		Assert.isTrue(sshPort < 0, "SSH Host must be not empty!");
-
-		// 默认root用户
-		if (StrUtil.isEmpty(sshUser)) {
-			sshUser = "root";
-		}
-
 		final JSch jsch = new JSch();
-		Session session;
-		try {
-			session = jsch.getSession(sshUser, sshHost, sshPort);
-		} catch (JSchException e) {
-			throw new JschRuntimeException(e);
-		}
+		final Session session = createSession(jsch, sshHost, sshPort, sshUser);
 
 		if (StrUtil.isNotEmpty(sshPass)) {
 			session.setPassword(sshPass);
 		}
 
-		// 设置第一次登陆的时候提示，可选值：(ask | yes | no)
-		session.setConfig("StrictHostKeyChecking", "no");
 		return session;
 	}
 
@@ -156,19 +162,43 @@ public class JschUtil {
 	 * @since 5.0.0
 	 */
 	public static Session createSession(String sshHost, int sshPort, String sshUser, String privateKeyPath, byte[] passphrase) {
+		Assert.notEmpty(privateKeyPath, "PrivateKey Path must be not empty!");
+
+		final JSch jsch = new JSch();
+		try {
+			jsch.addIdentity(privateKeyPath, passphrase);
+		} catch (JSchException e) {
+			throw new JschRuntimeException(e);
+		}
+
+		return createSession(jsch, sshHost, sshPort, sshUser);
+	}
+
+	/**
+	 * 创建一个SSH会话，重用已经使用的会话
+	 *
+	 * @param jsch    {@link JSch}
+	 * @param sshHost 主机
+	 * @param sshPort 端口
+	 * @param sshUser 用户名，如果为null，默认root
+	 * @return {@link Session}
+	 * @since 5.0.3
+	 */
+	public static Session createSession(JSch jsch, String sshHost, int sshPort, String sshUser) {
 		Assert.notEmpty(sshHost, "SSH Host must be not empty!");
 		Assert.isTrue(sshPort > 0, "SSH port must be > 0");
-		Assert.notEmpty(privateKeyPath, "PrivateKey Path must be not empty!");
 
 		// 默认root用户
 		if (StrUtil.isEmpty(sshUser)) {
 			sshUser = "root";
 		}
 
-		final JSch jsch = new JSch();
+		if (null == jsch) {
+			jsch = new JSch();
+		}
+
 		Session session;
 		try {
-			jsch.addIdentity(privateKeyPath, passphrase);
 			session = jsch.getSession(sshUser, sshHost, sshPort);
 		} catch (JSchException e) {
 			throw new JschRuntimeException(e);
@@ -176,6 +206,7 @@ public class JschUtil {
 
 		// 设置第一次登录的时候提示，可选值：(ask | yes | no)
 		session.setConfig("StrictHostKeyChecking", "no");
+
 		return session;
 	}
 
@@ -211,10 +242,10 @@ public class JschUtil {
 	public static boolean unBindPort(Session session, int localPort) {
 		try {
 			session.delPortForwardingL(localPort);
-			return true;
 		} catch (JSchException e) {
 			throw new JschRuntimeException(e);
 		}
+		return true;
 	}
 
 	/**
@@ -228,9 +259,6 @@ public class JschUtil {
 	 */
 	public static int openAndBindPortToLocal(Connector sshConn, String remoteHost, int remotePort) throws JschRuntimeException {
 		final Session session = openSession(sshConn.getHost(), sshConn.getPort(), sshConn.getUser(), sshConn.getPassword());
-		if (session == null) {
-			throw new JschRuntimeException("Error to create SSH Session！");
-		}
 		final int localPort = generateLocalPort();
 		bindPort(session, remoteHost, remotePort, localPort);
 		return localPort;
@@ -244,7 +272,19 @@ public class JschUtil {
 	 * @since 4.0.3
 	 */
 	public static ChannelSftp openSftp(Session session) {
-		return (ChannelSftp) openChannel(session, ChannelType.SFTP);
+		return openSftp(session, 0);
+	}
+
+	/**
+	 * 打开SFTP连接
+	 *
+	 * @param session Session会话
+	 * @param timeout 连接超时时长，单位毫秒
+	 * @return {@link ChannelSftp}
+	 * @since 5.3.3
+	 */
+	public static ChannelSftp openSftp(Session session, int timeout) {
+		return (ChannelSftp) openChannel(session, ChannelType.SFTP, timeout);
 	}
 
 	/**
@@ -292,9 +332,22 @@ public class JschUtil {
 	 * @since 4.5.2
 	 */
 	public static Channel openChannel(Session session, ChannelType channelType) {
+		return openChannel(session, channelType, 0);
+	}
+
+	/**
+	 * 打开Channel连接
+	 *
+	 * @param session     Session会话
+	 * @param channelType 通道类型，可以是shell或sftp等，见{@link ChannelType}
+	 * @param timeout     连接超时时长，单位毫秒
+	 * @return {@link Channel}
+	 * @since 5.3.3
+	 */
+	public static Channel openChannel(Session session, ChannelType channelType, int timeout) {
 		final Channel channel = createChannel(session, channelType);
 		try {
-			channel.connect();
+			channel.connect(Math.max(timeout, 0));
 		} catch (JSchException e) {
 			throw new JschRuntimeException(e);
 		}
@@ -336,7 +389,10 @@ public class JschUtil {
 	}
 
 	/**
-	 * 执行Shell命令
+	 * 执行Shell命令（使用EXEC方式）
+	 * <p>
+	 * 此方法单次发送一个命令到服务端，不读取环境变量，执行结束后自动关闭channel，不会产生阻塞。
+	 * </p>
 	 *
 	 * @param session   Session会话
 	 * @param cmd       命令
@@ -349,13 +405,13 @@ public class JschUtil {
 		if (null == charset) {
 			charset = CharsetUtil.CHARSET_UTF_8;
 		}
-		ChannelExec channel = (ChannelExec) openChannel(session, ChannelType.EXEC);
+		final ChannelExec channel = (ChannelExec) createChannel(session, ChannelType.EXEC);
 		channel.setCommand(StrUtil.bytes(cmd, charset));
 		channel.setInputStream(null);
 		channel.setErrStream(errStream);
 		InputStream in = null;
 		try {
-			channel.start();
+			channel.connect();
 			in = channel.getInputStream();
 			return IoUtil.read(in, CharsetUtil.CHARSET_UTF_8);
 		} catch (IOException e) {
@@ -366,6 +422,46 @@ public class JschUtil {
 			IoUtil.close(in);
 			close(channel);
 		}
+	}
+
+	/**
+	 * 执行Shell命令
+	 * <p>
+	 * 此方法单次发送一个命令到服务端，自动读取环境变量，执行结束后自动关闭channel，不会产生阻塞。<br>
+	 * 此方法返回数据中可能
+	 * </p>
+	 *
+	 * @param session Session会话
+	 * @param cmd     命令
+	 * @param charset 发送和读取内容的编码
+	 * @return {@link ChannelExec}
+	 * @since 5.2.5
+	 */
+	public static String execByShell(Session session, String cmd, Charset charset) {
+		final ChannelShell shell = openShell(session);
+		// 开始连接
+		shell.setPty(true);
+		OutputStream out = null;
+		InputStream in = null;
+		final StringBuilder result = StrUtil.builder();
+		try {
+			out = shell.getOutputStream();
+			in = shell.getInputStream();
+
+			out.write(StrUtil.bytes(cmd, charset));
+			out.flush();
+
+			while (in.available() > 0) {
+				result.append(IoUtil.read(in, charset));
+			}
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		} finally {
+			IoUtil.close(out);
+			IoUtil.close(in);
+			close(shell);
+		}
+		return result.toString();
 	}
 
 	/**

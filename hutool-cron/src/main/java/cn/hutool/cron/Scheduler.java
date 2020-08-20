@@ -1,14 +1,6 @@
 package cn.hutool.cron;
 
-import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Map.Entry;
-import java.util.TimeZone;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.thread.ExecutorBuilder;
 import cn.hutool.core.thread.ThreadFactoryBuilder;
 import cn.hutool.core.util.CharUtil;
@@ -22,6 +14,14 @@ import cn.hutool.cron.task.RunnableTask;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.StaticLog;
 import cn.hutool.setting.Setting;
+
+import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map.Entry;
+import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 任务调度器<br>
@@ -55,7 +55,7 @@ import cn.hutool.setting.Setting;
 public class Scheduler implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private Lock lock = new ReentrantLock();
+	private final Lock lock = new ReentrantLock();
 
 	/** 时区 */
 	private TimeZone timezone;
@@ -182,7 +182,7 @@ public class Scheduler implements Serializable {
 	 * @return this
 	 */
 	public Scheduler schedule(Setting cronSetting) {
-		if (CollectionUtil.isNotEmpty(cronSetting)) {
+		if (CollUtil.isNotEmpty(cronSetting)) {
 			String group;
 			for (Entry<String, LinkedHashMap<String, String>> groupedEntry : cronSetting.getGroupedMap().entrySet()) {
 				group = groupedEntry.getKey();
@@ -415,7 +415,7 @@ public class Scheduler implements Serializable {
 	 * 停止定时任务<br>
 	 * 此方法调用后会将定时器进程立即结束，如果为守护线程模式，则正在执行的作业也会自动结束，否则作业线程将在执行完成后结束。
 	 *
-	 * @param clearTasks 是否清除说有任务
+	 * @param clearTasks 是否清除所有任务
 	 * @return this
 	 * @since 4.1.17
 	 */

@@ -1,19 +1,5 @@
 package cn.hutool.setting.dialect;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.WatchEvent;
-import java.util.Date;
-import java.util.Properties;
-
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.convert.Convert;
@@ -34,10 +20,22 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import cn.hutool.log.LogFactory;
 import cn.hutool.log.StaticLog;
 import cn.hutool.setting.SettingRuntimeException;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.util.Date;
+import java.util.Properties;
 
 /**
  * Properties文件读取封装类
@@ -46,7 +44,11 @@ import cn.hutool.setting.SettingRuntimeException;
  */
 public final class Props extends Properties implements BasicTypeGetter<String>, OptBasicTypeGetter<String> {
 	private static final long serialVersionUID = 1935981579709590740L;
-	private final static Log log = LogFactory.get();
+
+	/**
+	 * 默认配置文件扩展名
+	 */
+	public final static String EXT_NAME = "properties";
 
 	// ----------------------------------------------------------------------- 私有属性 start
 	/** 属性文件的URL */
@@ -252,11 +254,11 @@ public final class Props extends Properties implements BasicTypeGetter<String>, 
 		if (null == this.propertiesFileUrl) {
 			throw new SettingRuntimeException("Can not find properties file: [{}]", urlResource);
 		}
-		log.debug("Load properties [{}]", propertiesFileUrl.getPath());
+
 		try (final BufferedReader reader = urlResource.getReader(charset)) {
 			super.load(reader);
-		} catch (Exception e) {
-			log.error(e, "Load properties error!");
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
 		}
 	}
 
@@ -536,7 +538,7 @@ public final class Props extends Properties implements BasicTypeGetter<String>, 
 	 * @since 4.6.3
 	 */
 	public <T> T fillBean(T bean, String prefix) {
-		prefix = StrUtil.addSuffixIfNot(prefix, StrUtil.DOT);
+		prefix = StrUtil.nullToEmpty(StrUtil.addSuffixIfNot(prefix, StrUtil.DOT));
 
 		String key;
 		for (java.util.Map.Entry<Object, Object> entry : this.entrySet()) {

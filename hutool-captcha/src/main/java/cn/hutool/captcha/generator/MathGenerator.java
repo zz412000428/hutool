@@ -16,7 +16,7 @@ public class MathGenerator implements CodeGenerator {
 	private static final String operators = "+-*";
 
 	/** 参与计算数字最大长度 */
-	private int numberLength;
+	private final int numberLength;
 
 	/**
 	 * 构造
@@ -42,12 +42,11 @@ public class MathGenerator implements CodeGenerator {
 		number1 = StrUtil.padAfter(number1, this.numberLength, CharUtil.SPACE);
 		number2 = StrUtil.padAfter(number2, this.numberLength, CharUtil.SPACE);
 
-		final String code = StrUtil.builder()//
+		return StrUtil.builder()//
 				.append(number1)//
 				.append(RandomUtil.randomChar(operators))//
 				.append(number2)//
 				.append('=').toString();
-		return code;
 	}
 
 	@Override
@@ -77,8 +76,8 @@ public class MathGenerator implements CodeGenerator {
 	}
 
 	/**
-	 * 获取长度验证码
-	 * 
+	 * 获取验证码长度
+	 *
 	 * @return 验证码长度
 	 */
 	public int getLength() {

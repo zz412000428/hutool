@@ -1,10 +1,10 @@
 package cn.hutool.http.useragent;
 
-import java.util.List;
-import java.util.regex.Pattern;
-
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ReUtil;
+
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 浏览器对象
@@ -23,10 +23,11 @@ public class Browser extends UserAgentInfo {
 	 * 支持的浏览器类型
 	 */
 	public static final List<Browser> browers = CollUtil.newArrayList(//
-			new Browser("MSEdge", "Edge", "edge\\/([\\d\\w\\.\\-]+)"), //
+			new Browser("MSEdge", "Edge|Edg", "(?:edge|Edg)\\/([\\d\\w\\.\\-]+)"), //
 			new Browser("Chrome", "chrome", "chrome\\/([\\d\\w\\.\\-]+)"), //
 			new Browser("Firefox", "firefox", Other_Version), //
 			new Browser("IEMobile", "iemobile", Other_Version), //
+			new Browser("Android Browser", "android", "version\\/([\\d\\w\\.\\-]+)"), //
 			new Browser("Safari", "safari", "version\\/([\\d\\w\\.\\-]+)"), //
 			new Browser("Opera", "opera", Other_Version), //
 			new Browser("Konqueror", "konqueror", Other_Version), //

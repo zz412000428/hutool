@@ -9,7 +9,7 @@
 	<parent>
 		<groupId>cn.hutool</groupId>
 		<artifactId>hutool-parent</artifactId>
-		<version>5.0.1</version>
+		<version>5.4.0</version>
 	</parent>
 
 	<artifactId>hutool-db</artifactId>
@@ -18,15 +18,15 @@
 
 	<properties>
 		<!-- versions -->
-		<c3p0.version>0.9.5.4</c3p0.version>
+		<c3p0.version>0.9.5.5</c3p0.version>
 		<dbcp2.version>2.7.0</dbcp2.version>
-		<tomcat-jdbc.version>9.0.27</tomcat-jdbc.version>
-		<druid.version>1.1.20</druid.version>
+		<tomcat-jdbc.version>9.0.30</tomcat-jdbc.version>
+		<druid.version>1.1.23</druid.version>
 		<hikariCP.version>2.4.13</hikariCP.version>
-		<mongo.version>3.11.1</mongo.version>
-		<sqlite.version>3.28.0</sqlite.version>
-		<hsqldb.version>2.5.0</hsqldb.version>
-		<jedis.version>3.1.0</jedis.version>
+		<mongo.version>3.12.4</mongo.version>
+		<sqlite.version>3.32.3</sqlite.version>
+		<hsqldb.version>2.5.1</hsqldb.version>
+		<jedis.version>3.3.0</jedis.version>
 	</properties>
 
 	<dependencies>
@@ -72,6 +72,12 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
+			<groupId>com.github.chris2018998</groupId>
+			<artifactId>BeeCP</artifactId>
+			<version>2.5.3</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-dbcp2</artifactId>
 			<version>${dbcp2.version}</version>
@@ -114,13 +120,13 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
-			<version>8.0.18</version>
+			<version>8.0.20</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>42.2.8.jre7</version>
+			<version>42.2.12.jre7</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -133,6 +139,12 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
 			<version>1.7.26</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.4.200</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

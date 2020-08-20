@@ -1,11 +1,16 @@
 package cn.hutool.core.util;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Editor;
 import cn.hutool.core.lang.Filter;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * {@link ArrayUtil} 数组工具单元测试
@@ -20,9 +25,28 @@ public class ArrayUtilTest {
 		Assert.assertTrue(ArrayUtil.isEmpty(a));
 		Assert.assertTrue(ArrayUtil.isEmpty((Object) a));
 		int[] b = null;
+		//noinspection ConstantConditions
 		Assert.assertTrue(ArrayUtil.isEmpty(b));
 		Object c = null;
+		//noinspection ConstantConditions
 		Assert.assertTrue(ArrayUtil.isEmpty(c));
+
+		Object d = new Object[]{"1", "2", 3, 4D};
+		boolean isEmpty = ArrayUtil.isEmpty(d);
+		Assert.assertFalse(isEmpty);
+		d = new Object[0];
+		isEmpty = ArrayUtil.isEmpty(d);
+		Assert.assertTrue(isEmpty);
+		d = null;
+		//noinspection ConstantConditions
+		isEmpty = ArrayUtil.isEmpty(d);
+		//noinspection ConstantConditions
+		Assert.assertTrue(isEmpty);
+
+		// Object数组
+		Object[] e = new Object[]{"1", "2", 3, 4D};
+		final boolean empty = ArrayUtil.isEmpty(e);
+		Assert.assertFalse(empty);
 	}
 
 	@Test
@@ -51,36 +75,21 @@ public class ArrayUtilTest {
 	@Test
 	public void filterTest() {
 		Integer[] a = {1, 2, 3, 4, 5, 6};
-		Integer[] filter = ArrayUtil.filter(a, new Editor<Integer>() {
-			@Override
-			public Integer edit(Integer t) {
-				return (t % 2 == 0) ? t : null;
-			}
-		});
+		Integer[] filter = ArrayUtil.filter(a, (Editor<Integer>) t -> (t % 2 == 0) ? t : null);
 		Assert.assertArrayEquals(filter, new Integer[]{2, 4, 6});
 	}
 
 	@Test
 	public void filterTestForFilter() {
 		Integer[] a = {1, 2, 3, 4, 5, 6};
-		Integer[] filter = ArrayUtil.filter(a, new Filter<Integer>() {
-			@Override
-			public boolean accept(Integer t) {
-				return t % 2 == 0;
-			}
-		});
+		Integer[] filter = ArrayUtil.filter(a, (Filter<Integer>) t -> t % 2 == 0);
 		Assert.assertArrayEquals(filter, new Integer[]{2, 4, 6});
 	}
 
 	@Test
 	public void filterTestForEditor() {
 		Integer[] a = {1, 2, 3, 4, 5, 6};
-		Integer[] filter = ArrayUtil.filter(a, new Editor<Integer>() {
-			@Override
-			public Integer edit(Integer t) {
-				return (t % 2 == 0) ? t * 10 : t;
-			}
-		});
+		Integer[] filter = ArrayUtil.filter(a, (Editor<Integer>) t -> (t % 2 == 0) ? t * 10 : t);
 		Assert.assertArrayEquals(filter, new Integer[]{1, 20, 3, 40, 5, 60});
 	}
 
@@ -122,7 +131,7 @@ public class ArrayUtilTest {
 		String[] keys = {"a", "b", "c"};
 		Integer[] values = {1, 2, 3};
 		Map<String, Integer> map = ArrayUtil.zip(keys, values, true);
-		Assert.assertEquals(map.toString(), "{a=1, b=2, c=3}");
+		Assert.assertEquals(Objects.requireNonNull(map).toString(), "{a=1, b=2, c=3}");
 	}
 
 	@Test
@@ -159,6 +168,17 @@ public class ArrayUtilTest {
 
 		double maxDouble = ArrayUtil.max(1D, 2.4D, 13.0D, 4.55D, 5D);
 		Assert.assertEquals(13.0, maxDouble, 2);
+
+		BigDecimal one = new BigDecimal("1.00");
+		BigDecimal two = new BigDecimal("2.0");
+		BigDecimal three = new BigDecimal("3");
+		BigDecimal[] bigDecimals = {two,one,three};
+
+		BigDecimal minAccuracy = ArrayUtil.min(bigDecimals, Comparator.comparingInt(BigDecimal::scale));
+		Assert.assertEquals(minAccuracy,three);
+
+		BigDecimal maxAccuracy = ArrayUtil.max(bigDecimals,Comparator.comparingInt(BigDecimal::scale));
+		Assert.assertEquals(maxAccuracy,one);
 	}
 
 	@Test
@@ -252,5 +272,29 @@ public class ArrayUtilTest {
 
 		String[] array = {"aa", "bb", "cc", "dd", "bb", "dd"};
 		Assert.assertEquals("[aa, bb, cc, dd, bb, dd]", ArrayUtil.toString(array));
+	}
+
+	@Test
+	public void toArrayTest(){
+		final ArrayList<String> list = CollUtil.newArrayList("A", "B", "C", "D");
+		final String[] array = ArrayUtil.toArray(list, String.class);
+		Assert.assertEquals("A", array[0]);
+		Assert.assertEquals("B", array[1]);
+		Assert.assertEquals("C", array[2]);
+		Assert.assertEquals("D", array[3]);
+	}
+
+	@Test
+	public void addAllTest(){
+		final int[] ints = ArrayUtil.addAll(new int[]{1, 2, 3}, new int[]{4, 5, 6});
+		Assert.assertArrayEquals(new int[]{1,2,3,4,5,6}, ints);
+	}
+
+	@Test
+	public void isAllNotNullTest(){
+		String[] allNotNull = {"aa", "bb", "cc", "dd", "bb", "dd"};
+		Assert.assertTrue(ArrayUtil.isAllNotNull(allNotNull));
+		String[] hasNull = {"aa", "bb", "cc", null, "bb", "dd"};
+		Assert.assertFalse(ArrayUtil.isAllNotNull(hasNull));
 	}
 }
